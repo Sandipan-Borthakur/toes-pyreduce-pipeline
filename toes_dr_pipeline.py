@@ -2,7 +2,8 @@ from pyreduce.configuration import get_configuration_for_instrument
 from pyreduce.instruments.common import create_custom_instrument
 from pyreduce.reduce import Reducer
 from pyreduce.util import start_logging
-
+import numpy as np
+import os
 
 # Define the path to support files if possible
 # otherwise set them to None
@@ -22,14 +23,20 @@ instrument = create_custom_instrument(
 instrument.info["instrument"] = "TOES"
 instrument.info["gain"]       =   1.1
 instrument.info["readnoise"]  =   5
-instrument.info["prescan_x"]  =   20
+instrument.info["prescan_x"]  =   0
 instrument.info["prescan_y"]  =   0
-instrument.info["overscan_x"] =   20
+instrument.info["overscan_x"] =   0
 instrument.info["overscan_y"] =   0
+instrument.info["longitude"]  =   "GEO_LONG"
+instrument.info["latitude"]   =   "GEO_LAT"
+instrument.info["altitude"]   =   "GEO_ELEV"
 
 # For loading the config we specify pyreduce as the source, since this is the default
 config = get_configuration_for_instrument("pyreduce", plot=1)
 # Define your own configuration
+config['wavecal_master']['extraction_width'] = 2
+config['wavecal_master']['collapse_function'] = 'sum'
+config['wavecal_master']['bias_scaling'] = "number_of_files"
 config["orders"]["filter_size"] = 15 # smoothing
 config["orders"]["degree"] = 4
 config["orders"]["degree_before_merge"] = 2
@@ -44,16 +51,25 @@ config["science"]["swath_width"]         = 400  # Extraction swath width (column
 config["science"]["smooth_slitfunction"] =   1. # Smoothing of the slit function
 config["science"]["smooth_spectrum"]     =   1.0E-6  # Smoothing in spectral direction
 config["science"]["extraction_width"]    =[5,5] # Extraction slit height (rows)
+config['science']['bias_scaling'] = "number_of_files"
+config['wavecal']['medium'] = 'vac'
+config['wavecal']['threshold'] = 900
+config['wavecal']['shift_window'] = 0.01
+config['wavecal']['correlate_cols'] = True
+config['wavecal']['degree'] = [7,7]
 
 # Since we can't find the files ourselves (at least not without defining the criteria we are looking for)
 # We need to manually define which files go where
-files = { "bias": ["2024-06-21/Bias_0s_20240621_191216-21.fit","2024-06-21/Bias_0s_20240621_191216-22.fit","2024-06-21/Bias_0s_20240621_191216-23.fit"],
-	    "flat": ["2024-06-21/Flat_5s_20240621_192503-2.fit","2024-06-21/Flat_5s_20240621_192503-3.fit"],
+files = { "bias": ["2024-06-21/Bias_0s_20240621_221716-%d.fit"%i for i in np.arange(1,11)],
+	    "flat": ["2024-06-21/Flat_5s_20240621_222912-%d.fit"%i for i in np.arange(1,5)],
 	 "orders": [flat_file],
-	 "science": ["2024-06-21/Vega_Object_25s_20240621_224908-3.fit"],
-     "wavecal_master":["2024-06-21/Vega_Calibration_30s_20240621_225633-3.fit"]
+	 "science": ["2024-06-21/Vega_Object_25s_20240621_224908-%d.fit"%i for i in np.arange(1,2)],
+     "wavecal_master":[ "2024-06-21/Vega_Calibration_30s_20240621_225633-1.fit",
+                        "2024-06-21/Vega_Calibration_30s_20240621_225633-2.fit",
+                        "2024-06-21/Vega_Calibration_30s_20240621_225633-3.fit",
+                        "2024-06-21/Vega_Calibration_30s_20240621_225633-4.fit",
+                        "2024-06-21/Vega_Calibration_30s_20240621_225633-5.fit"]
     }
-
 
 # We define the path to the output directory
 output_dir = "TOES-reduced"
@@ -66,13 +82,15 @@ start_logging(log_file)
 # Define other parameter for PyReduce
 target = ""
 night = "2024-05-31"
+
 mode = ""
 steps = (
-    # "bias",
-    # "flat",
-    # "orders",
-    # scatter",
-    # "norm_flat",
+   # "bias",
+   # "flat",
+   # "orders",
+   #"scatter",
+   # "norm_flat",
+   # "wavecal_master",
     "wavecal",
     "science",
     "continuum",
