@@ -12,7 +12,7 @@ instrument = create_custom_instrument(
 # Override default values
 # those can either be fixed values or refer to FITS header keywords
 instrument.info["instrument"] = "TOES"
-instrument.info["gain"]       =   1.1
+instrument.info["gain"]       =   "GAIN"
 instrument.info["readnoise"]  =   5
 instrument.info["prescan_x"]  =   0
 instrument.info["prescan_y"]  =   0
